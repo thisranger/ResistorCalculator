@@ -79,9 +79,10 @@ def ValidLineTile():
     for x in footprint[0]:
         for y in footprint[1]:
             for p in components:
-                if p.checkFootprint((x,y)):
-                    return x,y
+                if p.checkFootprint((x, y)):
+                    return x, y
     return X, Y
+
 
 def OrganizeTiles(posA, posB):
     # Make sure posA is above and to the left of posB
@@ -99,8 +100,9 @@ def OrganizeTiles(posA, posB):
         B = posA
     return A, B
 
+
 def Footprint(posA, posB):
-    footprint = [[],[]]
+    footprint = [[], []]
     for x in range(1, posB[0] - posA[0]):
         footprint[0].append(posA[0] + x)
     if len(footprint[0]) == 0:
@@ -112,11 +114,13 @@ def Footprint(posA, posB):
         footprint[1].append(posA[1])
     return footprint
 
+
 def UnselectLine():
     global tempPos, prvPos
     tempPos = None
     prvPos = None
     Draw()
+
 
 # Classes
 
