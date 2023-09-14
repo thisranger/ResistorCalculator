@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Imports
 import pygame
 
