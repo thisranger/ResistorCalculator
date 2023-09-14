@@ -67,20 +67,6 @@ def ValidLineTile():
         X = mousePos[0]
         Y = tempPos[1]
 
-    # if prvPos is not None:
-    #
-    #     a = tempPos[0] - prvPos[0]
-    #     b = tempPos[0] - X
-    #     c = tempPos[1] - prvPos[1]
-    #     d = tempPos[1] - Y
-    #
-    #     # check if the line overlaps itself
-    #     if ((a < 0) != (b < 0) or a == 0 or b == 0) and ((c < 0) != (d < 0) or c == 0 or d == 0):
-    #         pass
-    #     else:
-    #         print("c")
-    #         return (X, Y), False, None
-
     collision = 1000, 10000
     collisionObject = None
     a, b = OrganizeTiles(tempPos, (X, Y))
@@ -119,9 +105,7 @@ def ValidLineTile():
                                 return (X, Y), False, p
 
     if collisionObject is not None:
-        print("a")
         return collision, True, collisionObject
-    print("b")
     return (X, Y), True, None
 
 
