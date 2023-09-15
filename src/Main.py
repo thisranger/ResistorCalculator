@@ -1,22 +1,22 @@
 #!/usr/bin/python
 # Imports
 import pygame
-
+from screen import ScreenData
 # Constants
 MOUSELEFT = 1
 MOUSERIGHT = 3
 
 
 # Functions
-def Background():
-    tile = pygame.Surface((scale, scale))
+def Background(sd:ScreenData):
+    tile = pygame.Surface((sd.scale, sd.scale))
     tile.fill((30, 31, 34))
-    pygame.draw.rect(tile, (50, 51, 54), pygame.Rect(int(scale / 2 - scale / 8), int(scale / 2 - scale / 8), int(scale / 4), int(scale / 4)))
+    pygame.draw.rect(tile, (50, 51, 54), pygame.Rect(int(sd.scale / 2 - sd.scale / 8), int(sd.scale / 2 - sd.scale / 8), int(sd.scale / 4), int(sd.scale / 4)))
 
-    background = pygame.Surface(screen.get_size())
-    for x in range(width):
-        for y in range(height):
-            background.blit(tile, (edge[0] + x * scale, edge[1] + y * scale))
+    background = pygame.Surface(sd.screen.get_size())
+    for x in range(sd.width):
+        for y in range(sd.height):
+            background.blit(tile, (sd.edge[0] + x * sd.scale, sd.edge[1] + y * sd.scale))
     return background
 
 
@@ -233,8 +233,9 @@ class Resistor:
 def main():
     # Execute
     pygame.init()
-
+    
     # Set up the drawing window
+    global sd
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     scale = 30
 
@@ -244,7 +245,9 @@ def main():
     height = int(screen.get_height() / scale)
     edge = (screen.get_width() - scale * width) / 2, (screen.get_height() - scale * height) / 2
 
-    background = Background()
+    sd = ScreenData(scale, screen, width, height, edge)
+    
+    background = Background(scale, screen, width, height, edge) 
 
     components = []
     tempPos = None
