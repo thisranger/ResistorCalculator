@@ -235,7 +235,7 @@ def main():
     pygame.init()
     
     # Set up the drawing window
-    global sd
+    sd
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     scale = 30
 
