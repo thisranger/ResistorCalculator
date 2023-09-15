@@ -1,53 +1,58 @@
 #!/usr/bin/python
 # Imports
 import pygame
+from itertools import product
+import Components as C
+import Tiles as T
 
 # Constants
 MOUSELEFT = 1
 MOUSERIGHT = 3
 
+CIRCLE = 0
+LINE = 1
+
+HOR = 0
+VER = 1
+
 
 # Functions
 def Background():
-    tile = pygame.Surface((scale, scale))
+    tile = pygame.Surface((tileSize, tileSize))
     tile.fill((30, 31, 34))
-    pygame.draw.rect(tile, (50, 51, 54), pygame.Rect(int(scale / 2 - scale / 8), int(scale / 2 - scale / 8), int(scale / 4), int(scale / 4)))
+    pygame.draw.rect(tile, (50, 51, 54), pygame.Rect(int(tileSize / 2 - tileSize / 8), int(tileSize / 2 - tileSize / 8), int(tileSize / 4), int(tileSize / 4)))
 
     background = pygame.Surface(screen.get_size())
     for x in range(width):
         for y in range(height):
-            background.blit(tile, (edge[0] + x * scale, edge[1] + y * scale))
+            background.blit(tile, (edge[0] + x * tileSize, edge[1] + y * tileSize))
     return background
 
 
 def Draw():
     screen.blit(background, (0, 0))
     middelground.fill(pygame.Color(0, 0, 0, 0))
-    for i in components:
-        i.draw()
+    for i in objects:
+        i = i.draw()
+        if LINE:
+            pygame.draw.line(middelground, i[1], T.TilesToCords(i[2]), T.TilesToCords(i[3]), i[4])
+        elif CIRCLE:
+            pygame.draw.circle(middelground, i[1], T.TilesToCords(i[2]), i[3])
     screen.blit(middelground, (0, 0))
 
 
 def CheckComponents(pos):
     temp = []
-    for i in components:
+    for i in objects:
         if i.checkFootprint(pos):
             temp.append(i)
     return temp
 
 
 def RemoveNeigbours(remove):
-    for i in components:
-        if isinstance(i, Cross):
+    for i in objects:
+        if isinstance(i, C.Cross):
             i.removeNeighbour(remove)
-
-
-def TilesToCords(pos):
-    return int(pos[0] * scale + scale / 2 + edge[0] - 1), int(pos[1] * scale + scale / 2 + edge[1] - 1)
-
-
-def CordsToTiles(pos):
-    return int((pos[0] - edge[0]) / scale), int((pos[1] - edge[1]) / scale)
 
 
 def DrawExampleLine():
@@ -55,91 +60,53 @@ def DrawExampleLine():
         color = (20, 20, 20)
     else:
         color = (40, 0, 0)
-    pygame.draw.line(screen, color, TilesToCords(tempPos), TilesToCords(validLine[0]), 7)
+    pygame.draw.line(screen, color, T.TilesToCords(tempPos), T.TilesToCords(validLine[0]), 7)
 
 
 def ValidLineTile():
     # returns a sugestion and if the line is valid and which componenten is clicked
     if abs(mousePos[0] - tempPos[0]) <= abs(mousePos[1] - tempPos[1]):
-        X = tempPos[0]
-        Y = mousePos[1]
+        newPos = tempPos[0], mousePos[1]
     else:
-        X = mousePos[0]
-        Y = tempPos[1]
-
-    # if prvPos is not None:
-    #
-    #     a = tempPos[0] - prvPos[0]
-    #     b = tempPos[0] - X
-    #     c = tempPos[1] - prvPos[1]
-    #     d = tempPos[1] - Y
-    #
-    #     # check if the line overlaps itself
-    #     if ((a < 0) != (b < 0) or a == 0 or b == 0) and ((c < 0) != (d < 0) or c == 0 or d == 0):
-    #         pass
-    #     else:
-    #         print("c")
-    #         return (X, Y), False, None
+        newPos = mousePos[0], tempPos[1]
 
     collision = 1000, 10000
     collisionObject = None
-    a, b = OrganizeTiles(tempPos, (X, Y))
+    a, b = T.OrganizeTiles(tempPos, (newPos[0], newPos[1]))
     footprint = Footprint(a, b)
-    if X in footprint[0]:
-        footprint[1].append(Y)
+    if newPos[0] in footprint[0]:
+        footprint[1].append(newPos[1])
     else:
-        footprint[0].append(X)
+        footprint[0].append(newPos[0])
 
-    for p in components:
-        for x in footprint[0]:
-            for y in footprint[1]:
-                if p.checkFootprint((x, y)):
-                    if isinstance(p, Cross):
-                        if len(footprint[0]) == 1:
-                            if abs(tempPos[1] - y) < abs(tempPos[1] - collision[1]):
-                                collision = x, y
-                                collisionObject = p
-                        else:
-                            if abs(tempPos[0] - x) < abs(tempPos[0] - collision[0]):
-                                collision = x, y
-                                collisionObject = p
-                    else:
-                        if tempPos[0] > x:
-                            print(X, Y, x, y)
-                            if p.checkFootprint((x - 1, y)):
-                                return (X, Y), False, p
-                        elif tempPos[0] < x:
-                            if p.checkFootprint((x + 1, y)):
-                                return (X, Y), False, p
-                        elif tempPos[1] > y:
-                            if p.checkFootprint((x, y - 1)):
-                                return (X, Y), False, p
-                        elif tempPos[1] < y:
-                            if p.checkFootprint((x, y + 1)):
-                                return (X, Y), False, p
+    for component, x, y in product(objects, footprint[0], footprint[1]):
+        if component.checkFootprint((x, y)):
+            if isinstance(component, C.Cross):
+                if len(footprint[0]) == 1:
+                    if abs(tempPos[1] - y) < abs(tempPos[1] - collision[1]):
+                        collision = x, y
+                        collisionObject = component
+                else:
+                    if abs(tempPos[0] - x) < abs(tempPos[0] - collision[0]):
+                        collision = x, y
+                        collisionObject = component
+            else:
+                if tempPos[0] > x:
+                    if component.checkFootprint((x - 1, y)):
+                        return (newPos[0], newPos[1]), False, component
+                elif tempPos[0] < x:
+                    if component.checkFootprint((x + 1, y)):
+                        return (newPos[0], newPos[1]), False, component
+                elif tempPos[1] > y:
+                    if component.checkFootprint((x, y - 1)):
+                        return (newPos[0], newPos[1]), False, component
+                elif tempPos[1] < y:
+                    if component.checkFootprint((x, y + 1)):
+                        return (newPos[0], newPos[1]), False, component
 
     if collisionObject is not None:
-        print("a")
         return collision, True, collisionObject
-    print("b")
-    return (X, Y), True, None
-
-
-def OrganizeTiles(posA, posB):
-    # Make sure posA is above and to the left of posB
-    if posA[0] < posB[0]:
-        A = posA
-        B = posB
-    elif posA[0] > posB[0]:
-        A = posB
-        B = posA
-    elif posA[1] < posB[1]:
-        A = posA
-        B = posB
-    else:
-        A = posB
-        B = posA
-    return A, B
+    return (newPos[0], newPos[1]), True, None
 
 
 def Footprint(posA, posB):
@@ -162,78 +129,13 @@ def UnselectLine():
     prvPos = None
     Draw()
 
+def GetTileSize():
+    return tileSize
+
+def GetEdge():
+    return edge
 
 # Classes
-
-class Line:
-
-    def __init__(self, posA, posB, neighbourA, neighbourB):
-        # Make sure posA is above and to the left of posB
-        if posA[0] < posB[0]:
-            self.posA = posA
-            self.neighbourA = neighbourA
-            self.posB = posB
-            self.neighbourB = neighbourB
-        elif posA[0] > posB[0]:
-            self.posA = posB
-            self.neighbourA = neighbourB
-            self.posB = posA
-            self.neighbourB = neighbourA
-        elif posA[1] < posB[1]:
-            self.posA = posA
-            self.neighbourA = neighbourA
-            self.posB = posB
-            self.neighbourB = neighbourA
-        else:
-            self.posA = posB
-            self.neighbourA = neighbourB
-            self.posB = posA
-            self.neighbourB = neighbourA
-
-        self.footprint = Footprint(self.posA, self.posB)
-
-    def checkFootprint(self, pos):
-        if pos[0] in self.footprint[0] and pos[1] in self.footprint[1]:
-            return True
-        return False
-
-    def draw(self):
-        pygame.draw.line(middelground, (0, 0, 0), TilesToCords(self.posA), TilesToCords(self.posB), 7)
-
-    def splitLine(self, pos, neighbour):
-        self.footprint = Footprint(self.posA, pos)
-
-        components.append(Line(pos, self.posB, neighbour, self.neighbourB))
-        self.posB = pos
-        self.neighbourB = neighbour
-
-
-class Cross:
-
-    def __init__(self, pos, neighbour=None):
-        self.pos = pos
-        self.neighbours = []
-        if neighbour is not None:
-            self.neighbours.append(neighbour)
-
-    def draw(self):
-        pygame.draw.circle(middelground, (0, 0, 0), TilesToCords(self.pos), 8)
-
-    def checkFootprint(self, pos):
-        if self.pos == pos:
-            return True
-        return False
-
-    def addNeighbour(self, neighbour):
-        self.neighbours.append(neighbour)
-
-    def addNeighbours(self, neighbours):
-        for i in neighbours:
-            self.neighbours.append(i)
-
-    def removeNeighbour(self, remove):
-        if remove in self.neighbours:
-            self.neighbours.remove(remove)
 
 
 class Resistor:
@@ -249,17 +151,18 @@ pygame.init()
 
 # Set up the drawing window
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-scale = 30
+tileSize = 30
 
 middelground = pygame.Surface(screen.get_size(), pygame.SRCALPHA, 32)
 
-width = int(screen.get_width() / scale)
-height = int(screen.get_height() / scale)
-edge = (screen.get_width() - scale * width) / 2, (screen.get_height() - scale * height) / 2
+
+width = int(screen.get_width() / tileSize)
+height = int(screen.get_height() / tileSize)
+edge = (screen.get_width() - tileSize * width) / 2, (screen.get_height() - tileSize * height) / 2
 
 background = Background()
 
-components = []
+objects = []
 tempPos = None
 tempCrossA = None
 tempCrossB = None
@@ -270,7 +173,7 @@ validLine = None
 Draw()
 running = True
 while running:
-    mousePos = CordsToTiles(pygame.mouse.get_pos())
+    mousePos = T.CordsToTiles(pygame.mouse.get_pos())
 
     screen.blit(background, (0, 0))
     screen.blit(middelground, (0, 0))
@@ -290,34 +193,34 @@ while running:
                 if event.button == MOUSELEFT:  # adds a crosspoint with a new line
                     if tempPos is None:
                         tempPos = mousePos
-                        tempCrossA = Cross(tempPos)
+                        tempCrossA = C.Cross(tempPos)
                         tempCrossA.draw()
                         tempCrossB = None
 
                     else:
                         if validLine is not None and validLine[1] is True:
                             if tempCrossB is None:
-                                components.append(tempCrossA)
+                                objects.append(tempCrossA)
 
-                            tempCrossB = Cross(validLine[0])
-                            components.append(Line(tempPos, validLine[0], tempCrossA, tempCrossB))
-                            tempCrossA.addNeighbour(components[-1])
-                            tempCrossB.addNeighbour(components[-1])
-                            components.append(tempCrossB)
+                            tempCrossB = C.Cross(validLine[0])
+                            objects.append(C.Line(tempPos, validLine[0], tempCrossA, tempCrossB))
+                            tempCrossA.addNeighbour(objects[-1])
+                            tempCrossB.addNeighbour(objects[-1])
+                            objects.append(tempCrossB)
                             prvPos = tempPos[0], tempPos[1]
                             tempPos = validLine[0]
-                            tempCrossA = components[-1]
+                            tempCrossA = objects[-1]
                             Draw()
 
                 elif event.button == MOUSERIGHT:  # removes crosspoints and/or lines
                     remove = CheckComponents(mousePos)
 
                     for i in remove:
-                        if isinstance(i, Cross):
+                        if isinstance(i, C.Cross):
                             for p in i.neighbours:
                                 RemoveNeigbours(p)
-                                components.remove(p)
-                        components.remove(i)
+                                objects.remove(p)
+                        objects.remove(i)
 
                     UnselectLine()
 
@@ -328,7 +231,7 @@ while running:
     else:
         validLine = None
 
-    pygame.draw.circle(screen, (0, 0, 0), TilesToCords(mousePos), 5)
+    pygame.draw.circle(screen, (0, 0, 0), T.TilesToCords(mousePos), 5)
 
     pygame.display.flip()
 
