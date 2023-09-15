@@ -5,6 +5,7 @@ from itertools import product
 import Components as C
 import Tiles as T
 
+from screen import ScreenData
 # Constants
 MOUSELEFT = 1
 MOUSERIGHT = 3
@@ -17,15 +18,15 @@ VER = 1
 
 
 # Functions
-def Background():
-    tile = pygame.Surface((tileSize, tileSize))
+def Background(sd:ScreenData):
+    tile = pygame.Surface((sd.scale, sd.scale))
     tile.fill((30, 31, 34))
-    pygame.draw.rect(tile, (50, 51, 54), pygame.Rect(int(tileSize / 2 - tileSize / 8), int(tileSize / 2 - tileSize / 8), int(tileSize / 4), int(tileSize / 4)))
+    pygame.draw.rect(tile, (50, 51, 54), pygame.Rect(int(sd.scale / 2 - sd.scale / 8), int(sd.scale / 2 - sd.scale / 8), int(sd.scale / 4), int(sd.scale / 4)))
 
-    background = pygame.Surface(screen.get_size())
-    for x in range(width):
-        for y in range(height):
-            background.blit(tile, (edge[0] + x * tileSize, edge[1] + y * tileSize))
+    background = pygame.Surface(sd.screen.get_size())
+    for x in range(sd.width):
+        for y in range(sd.height):
+            background.blit(tile, (sd.edge[0] + x * sd.scale, sd.edge[1] + y * sd.scale))
     return background
 
 
@@ -145,94 +146,99 @@ class Resistor:
         pass
 
 
-# Execute
 
-pygame.init()
+def main():
+    # Execute
+    pygame.init()
+    
+    # Set up the drawing window
+    sd
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    scale = 30
 
-# Set up the drawing window
-screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-tileSize = 30
+    width = int(screen.get_width() / scale)
+    height = int(screen.get_height() / scale)
+    edge = (screen.get_width() - scale * width) / 2, (screen.get_height() - scale * height) / 2
 
-middelground = pygame.Surface(screen.get_size(), pygame.SRCALPHA, 32)
+    sd = ScreenData(scale, screen, width, height, edge)
+    
+    background = Background(scale, screen, width, height, edge) 
 
+    components = []
+    tempPos = None
+    tempCrossA = None
+    tempCrossB = None
+    prvPos = None
+    validLine = None
 
-width = int(screen.get_width() / tileSize)
-height = int(screen.get_height() / tileSize)
-edge = (screen.get_width() - tileSize * width) / 2, (screen.get_height() - tileSize * height) / 2
+    # Run until the user asks to quit
+    Draw()
+    running = True
+    while running:
+        mousePos = CordsToTiles(pygame.mouse.get_pos())
 
-background = Background()
+        screen.blit(background, (0, 0))
+        screen.blit(middelground, (0, 0))
 
-objects = []
-tempPos = None
-tempCrossA = None
-tempCrossB = None
-prvPos = None
-validLine = None
-
-# Run until the user asks to quit
-Draw()
-running = True
-while running:
-    mousePos = T.CordsToTiles(pygame.mouse.get_pos())
-
-    screen.blit(background, (0, 0))
-    screen.blit(middelground, (0, 0))
-
-    # Userinput
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                UnselectLine()
-            if event.key == pygame.K_q:
+        # Userinput
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
                 running = False
-
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == MOUSELEFT:  # adds a crosspoint with a new line
-                    if tempPos is None:
-                        tempPos = mousePos
-                        tempCrossA = C.Cross(tempPos)
-                        tempCrossA.draw()
-                        tempCrossB = None
-
-                    else:
-                        if validLine is not None and validLine[1] is True:
-                            if tempCrossB is None:
-                                objects.append(tempCrossA)
-
-                            tempCrossB = C.Cross(validLine[0])
-                            objects.append(C.Line(tempPos, validLine[0], tempCrossA, tempCrossB))
-                            tempCrossA.addNeighbour(objects[-1])
-                            tempCrossB.addNeighbour(objects[-1])
-                            objects.append(tempCrossB)
-                            prvPos = tempPos[0], tempPos[1]
-                            tempPos = validLine[0]
-                            tempCrossA = objects[-1]
-                            Draw()
-
-                elif event.button == MOUSERIGHT:  # removes crosspoints and/or lines
-                    remove = CheckComponents(mousePos)
-
-                    for i in remove:
-                        if isinstance(i, C.Cross):
-                            for p in i.neighbours:
-                                RemoveNeigbours(p)
-                                objects.remove(p)
-                        objects.remove(i)
-
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
                     UnselectLine()
+                if event.key == pygame.K_q:
+                    running = False
 
-    if tempPos is not None:
-        validLine = ValidLineTile()
-        DrawExampleLine()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if event.button == MOUSELEFT:  # adds a crosspoint with a new line
+                        if tempPos is None:
+                            tempPos = mousePos
+                            tempCrossA = Cross(tempPos)
+                            tempCrossA.draw()
+                            tempCrossB = None
 
-    else:
-        validLine = None
+                        else:
+                            if validLine is not None and validLine[1] is True:
+                                if tempCrossB is None:
+                                    components.append(tempCrossA)
 
-    pygame.draw.circle(screen, (0, 0, 0), T.TilesToCords(mousePos), 5)
+                                tempCrossB = Cross(validLine[0])
+                                components.append(Line(tempPos, validLine[0], tempCrossA, tempCrossB))
+                                tempCrossA.addNeighbour(components[-1])
+                                tempCrossB.addNeighbour(components[-1])
+                                components.append(tempCrossB)
+                                prvPos = tempPos[0], tempPos[1]
+                                tempPos = validLine[0]
+                                tempCrossA = components[-1]
+                                Draw()
 
-    pygame.display.flip()
+                    elif event.button == MOUSERIGHT:  # removes crosspoints and/or lines
+                        remove = CheckComponents(mousePos)
 
-pygame.quit()
+                        for i in remove:
+                            if isinstance(i, Cross):
+                                for p in i.neighbours:
+                                    RemoveNeigbours(p)
+                                    components.remove(p)
+                            components.remove(i)
+
+                        UnselectLine()
+
+        if tempPos is not None:
+            validLine = ValidLineTile()
+            DrawExampleLine()
+
+        else:
+            validLine = None
+
+        pygame.draw.circle(screen, (0, 0, 0), TilesToCords(mousePos), 5)
+
+        pygame.display.flip()
+
+    pygame.quit()
+
+
+if __name__ == '__main__':
+    main()
