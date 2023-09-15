@@ -136,9 +136,8 @@ def GetTileSize():
 def GetEdge():
     return edge
 
+
 # Classes
-
-
 class Resistor:
     footPrint = [[(-1, 0), (0, 0), (0, 1)], [(0, -1), (0, 0), (0, 1)]]
 
@@ -152,7 +151,6 @@ def main():
     pygame.init()
     
     # Set up the drawing window
-    sd
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     scale = 30
 
@@ -162,7 +160,7 @@ def main():
 
     sd = ScreenData(scale, screen, width, height, edge)
     
-    background = Background(scale, screen, width, height, edge) 
+    background :pygame.Surface = Background(sd) 
 
     components = []
     tempPos = None

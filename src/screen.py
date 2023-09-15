@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-
+import pygame
 
 @dataclass
 class ScreenData():
     scale: int
-    screen: None 
+    screen: pygame.Surface 
     width: int
     height: int
-    edge: None 
+    edge: tuple[float,float] 
 
